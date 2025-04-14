@@ -2,7 +2,12 @@ from moviepy import VideoFileClip
 import os 
 from pydub import AudioSegment
 from openai import OpenAI
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+from dotenv import load_dotenv 
+
+load_dotenv(dotenv_path=".env")
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 def process_video(video_path):
     """
@@ -12,8 +17,8 @@ def process_video(video_path):
     clip = VideoFileClip(video_path)
     audioFilePath = f"{filename}.wav"
     clip.audio.write_audiofile(audioFilePath)
-    print(audioFilePath)
-    transcribe_audio(audioFilePath)
+    transcription = transcribe_audio(audioFilePath)
+    # summary = summarizer(transcription)
 
 def convert_to_mono_16k(audio_file_path, output_dir="tmp"):
     """Converts audio to mono and 16kHz, returns the path to the converted audio."""
@@ -29,8 +34,12 @@ def convert_to_mono_16k(audio_file_path, output_dir="tmp"):
     sound.export(converted_file_path, format="wav")
     return converted_file_path
 
-def transcribe_audio(path):
-    with open(path, "rb") as audio_file:
+def transcribe_audio(audio_path):
+    # convert to mono and 16kHz audio
+    mono_audio_path = convert_to_mono_16k(audio_path)
+    print(mono_audio_path)
+
+    with open(mono_audio_path, "rb") as audio_file:
         transcript = client.audio.transcriptions.create(model="whisper-1", file=audio_file)
 
     print(transcript)

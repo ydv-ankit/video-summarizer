@@ -4,3 +4,4 @@ python-multipart
 moviepy
 openai
 dotenv
+pydantic

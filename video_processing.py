@@ -3,6 +3,7 @@ import os
 from pydub import AudioSegment
 from openai import OpenAI
 from dotenv import load_dotenv 
+from pydantic import BaseModel
 
 load_dotenv(dotenv_path=".env")
 
@@ -18,7 +19,8 @@ def process_video(video_path):
     audioFilePath = f"{filename}.wav"
     clip.audio.write_audiofile(audioFilePath)
     transcription = transcribe_audio(audioFilePath)
-    # summary = summarizer(transcription)
+    summary = summarizer(transcription)
+    return summary
 
 def convert_to_mono_16k(audio_file_path, output_dir="tmp"):
     """Converts audio to mono and 16kHz, returns the path to the converted audio."""
@@ -45,5 +47,27 @@ def transcribe_audio(audio_path):
     print(transcript)
     return transcript.text
 
+# to get formatted response from LLM
+class SummarizerFormat(BaseModel):
+    summary: str
+
 def summarizer(text: str):
-    pass
+    data = client.beta.chat.completions.parse(
+        messages=[
+               {
+                      "role": "system",
+                      "content": """
+                        You are given a transcription of a video file.
+                        Your task is to summarize given transcription and provide a summary containing important points.
+                        Return the summary content into markdown compatible syntax.
+
+					return response in json format.
+                        """,
+               },
+               { "role": "user", "content": f"{text}" },
+        ],
+        model="gpt-4o-mini",
+        response_format=SummarizerFormat
+	);
+
+    return data.choices[0].message.content

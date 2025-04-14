@@ -1,0 +1,5 @@
+fastapi[standard]
+ffmpeg-python
+python-multipart
+moviepy
+openai

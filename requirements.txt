@@ -4,3 +4,6 @@ python-multipart
 moviepy
 dotenv
 google-genai
+SQLAlchemy
+psycopg2-binary
+bcrypt

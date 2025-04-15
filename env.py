@@ -4,3 +4,4 @@ import os
 load_dotenv(dotenv_path=".env")
 
 GEMINI_API_KEY= os.getenv("GEMINI_API_KEY")
+POSTGRES_URL= os.getenv("POSTGRES_URL")

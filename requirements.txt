@@ -2,6 +2,5 @@ fastapi[standard]
 ffmpeg-python
 python-multipart
 moviepy
-openai
 dotenv
-pydantic
+google-genai

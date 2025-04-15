@@ -24,5 +24,5 @@ async def create_upload_file(file: UploadFile):
         f.write(contents)
     
     # extract audio from video
-    video_processing.process_video(f"tmp/{filename}")
-    return {"msg": "video processed", "data": None}
+    summary_data = video_processing.process_video(f"tmp/{filename}")
+    return {"msg": "video processed", "data": summary_data or None}

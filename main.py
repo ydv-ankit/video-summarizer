@@ -13,9 +13,6 @@ import models.user as user_model
 import schemas
 import uuid
 import bcrypt
-import jwt
-import env
-from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from lib import utils
 

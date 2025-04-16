@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, Depends, HTTPException
+from fastapi import FastAPI, UploadFile, Depends, HTTPException, Request
 import math
 import random
 import os
@@ -10,25 +10,42 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, insert
 from sqlalchemy.exc import IntegrityError
 import models.user as user_model
-from pydantic import BaseModel
 import schemas
 import uuid
 import bcrypt
 import jwt
 import env
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
+from fastapi.middleware.cors import CORSMiddleware
+from lib import utils
 
 user_model.Base.metadata.create_all(bind=engine)
 
 # FastAPI instance
 app = FastAPI()
 
+# middlewares'
+origins = [
+    "http://localhost"
+]
+
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=origins,
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+# app.add_middleware(HTTPSRedirectMiddleware)
+
 @app.get("/health")
 def root():
     return JSONResponse({"msg":"success"}, 200)
 
 @app.post("/upload", status_code=200)
-async def create_upload_file(file: UploadFile):
+async def create_upload_file(file: UploadFile, user_id = Depends(utils.validate_and_decode_jwt)):
     # create a random filename
+    print(user_id)
     filename: str = str(math.floor(random.random() * 10e10)) + "." + file.filename.split(".")[-1]
     # check and create "tmp" directory
     if not os.path.exists("tmp"):
@@ -39,8 +56,8 @@ async def create_upload_file(file: UploadFile):
         f.write(contents)
     
     # extract audio from video
-    summary_data = video_processing.process_video(f"tmp/{filename}")
-    return JSONResponse({"msg": "video processed", "data": summary_data or None}, 200)
+    # summary_data = video_processing.process_video(f"tmp/{filename}")
+    return JSONResponse({"msg": "video processed", "data": "summary_data" or None}, 200)
 
 @app.post("/signup", status_code=201)
 def signup(
@@ -74,7 +91,7 @@ def login(
         if res:
             if bcrypt.checkpw(bytes(user.password, 'utf-8'), bytes(res.password, 'utf-8')):
                 # generate jwt token
-                token = jwt.encode({"id": res.id.__str__()}, env.JWT_SECRET, algorithm="HS256")
+                token = utils.create_jwt_token(res.id.__str__())
                 # makeup json response structure
                 response = JSONResponse({"id": res.id.__str__()}, 200)
                 response.set_cookie(key="token", value=token)

@@ -29,35 +29,47 @@ origins = [
     "http://localhost"
 ]
 
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=origins,
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
-# app.add_middleware(HTTPSRedirectMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/health")
 def root():
     return JSONResponse({"msg":"success"}, 200)
 
 @app.post("/upload", status_code=200)
-async def create_upload_file(file: UploadFile, user_id = Depends(utils.validate_and_decode_jwt)):
-    # create a random filename
-    print(user_id)
-    filename: str = str(math.floor(random.random() * 10e10)) + "." + file.filename.split(".")[-1]
-    # check and create "tmp" directory
-    if not os.path.exists("tmp"):
-        os.mkdir("tmp")
-    # read the file contents and write to a new file inside "tmp" directory
-    contents = await file.read()
-    with open(f"tmp/{filename}", "wb") as f:
-        f.write(contents)
-    
-    # extract audio from video
-    # summary_data = video_processing.process_video(f"tmp/{filename}")
-    return JSONResponse({"msg": "video processed", "data": "summary_data" or None}, 200)
+async def create_upload_file(file: UploadFile, 
+                            user_id = Depends(utils.validate_and_decode_jwt), 
+                            db: Session = Depends(db_connection)
+                        ):
+    try:
+        # check if user tokens available
+        query = select(user_model.User).where(user_model.User.id == user_id)
+        res = db.scalars(query).first()
+        print(res)
+        if res is None or (res and res.tokens <= 0):
+            print("raising error")
+            raise HTTPException(status_code=400)
+        else:
+            # create a random filename
+            filename: str = str(math.floor(random.random() * 10e10)) + "." + file.filename.split(".")[-1]
+            # check and create "tmp" directory
+            if not os.path.exists("tmp"):
+                os.mkdir("tmp")
+            # read the file contents and write to a new file inside "tmp" directory
+            contents = await file.read()
+            with open(f"tmp/{filename}", "wb") as f:
+                f.write(contents)
+            
+            # extract audio from video
+            summary_data = video_processing.process_video(f"tmp/{filename}")
+            return JSONResponse({"msg": "video processed", "data": "summary_data" or None}, 200)
+    except:
+        raise HTTPException(status_code=400)
 
 @app.post("/signup", status_code=201)
 def signup(
@@ -104,6 +116,3 @@ def login(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.get("/tokens")
-def get_tokens(userid: str):
-    pass

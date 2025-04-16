@@ -64,7 +64,7 @@ async def create_upload_file(file: UploadFile,
             
             # extract audio from video
             summary_data = video_processing.process_video(f"tmp/{filename}")
-            return JSONResponse({"msg": "video processed", "data": "summary_data" or None}, 200)
+            return JSONResponse({"msg": "video processed", "data": summary_data or None}, 200)
     except:
         raise HTTPException(status_code=400)
 

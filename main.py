@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, Depends, HTTPException, Request
+from fastapi import FastAPI, UploadFile, Depends, HTTPException
 import math
 import random
 import os
@@ -15,6 +15,7 @@ import uuid
 import bcrypt
 from fastapi.middleware.cors import CORSMiddleware
 from lib import utils
+import env
 
 user_model.Base.metadata.create_all(bind=engine)
 
@@ -22,9 +23,7 @@ user_model.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 # middlewares'
-origins = [
-    "http://localhost:5173"
-]
+origins = list(env.ORIGIN_URL)
 
 app.add_middleware(
     CORSMiddleware,

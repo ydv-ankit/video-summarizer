@@ -23,7 +23,7 @@ app = FastAPI()
 
 # middlewares'
 origins = [
-    "http://localhost"
+    "http://localhost:5173"
 ]
 
 app.add_middleware(
@@ -38,7 +38,7 @@ app.add_middleware(
 def root():
     return JSONResponse({"msg":"success"}, 200)
 
-@app.post("/upload", status_code=200)
+@app.post("/summarize", status_code=200)
 async def create_upload_file(file: UploadFile, 
                             user_id = Depends(utils.validate_and_decode_jwt), 
                             db: Session = Depends(db_connection)
@@ -83,7 +83,7 @@ def signup(
         db.commit()
         return JSONResponse({"id": id.__str__()}, 201)
     except IntegrityError:
-        raise HTTPException(status_code=400, detail="user already exists")
+        return JSONResponse({"msg": "user already exists"}, 400)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -97,19 +97,39 @@ def login(
         query = select(user_model.User).where(user_model.User.email == user.email)
         res = db.scalars(query).first()
         # if exists, check password
-        if res:
-            if bcrypt.checkpw(bytes(user.password, 'utf-8'), bytes(res.password, 'utf-8')):
+        if res and bcrypt.checkpw(bytes(user.password, 'utf-8'), bytes(res.password, 'utf-8')):
                 # generate jwt token
                 token = utils.create_jwt_token(res.id.__str__())
                 # makeup json response structure
-                response = JSONResponse({"id": res.id.__str__()}, 200)
+                response = JSONResponse({"id": res.id.__str__(), "email": user.email}, 200)
                 response.set_cookie(key="token", value=token)
                 return response
-            else:
-                raise HTTPException(status_code=401, detail="invalid password")
         else:
             # raise unauthorised error
-            raise HTTPException(status_code=401, detail="login failed")
+            return JSONResponse({"msg": "invalid credentials"}, status_code = 401)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@app.post("/logout", status_code=200)
+def logout():
+    try:
+        response = JSONResponse(status_code= 200)
+        response.set_cookie(key="token", value="")
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/tokens")
+def get_user_tokens(user_id = Depends(utils.validate_and_decode_jwt), 
+                    db: Session = Depends(db_connection)):
+    try:
+        query = select(user_model.User).where(user_model.User.id == user_id)
+        res = db.execute(query).first()
+        if res is not None:
+            return JSONResponse({
+                "msg": "success",
+                "data": res["tokens"]
+            }, status_code=200)
+    
+    except:
+        raise HTTPException(status_code=400)

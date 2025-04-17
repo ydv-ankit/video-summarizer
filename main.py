@@ -7,7 +7,7 @@ import video_processing
 from fastapi.responses import JSONResponse
 from db.engine import db_connection, engine
 from sqlalchemy.orm import Session
-from sqlalchemy import select, insert
+from sqlalchemy import select, insert, update
 from sqlalchemy.exc import IntegrityError
 import models.user as user_model
 import schemas
@@ -24,7 +24,7 @@ user_model.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 # middlewares'
-origins = list(env.ORIGIN_URL)
+origins = [env.ORIGIN_URL]
 
 app.add_middleware(
     CORSMiddleware,
@@ -47,7 +47,6 @@ async def create_upload_file(file: UploadFile,
         # check if user tokens available
         query = select(user_model.User).where(user_model.User.id == user_id)
         res = db.scalars(query).first()
-        print(res)
         if res is None or (res and res.tokens <= 0):
             print("raising error")
             raise HTTPException(status_code=400)
@@ -64,6 +63,10 @@ async def create_upload_file(file: UploadFile,
             
             # extract audio from video
             summary_data = video_processing.process_video(f"tmp/{filename}")
+            # decrease user token by 1 for successful request
+            query = update(user_model.User).where(user_model.User.id == user_id).values(tokens = res.tokens - 1)
+            db.execute(query)
+            db.commit()
             return JSONResponse({"msg": "video processed", "data": summary_data or None}, 200)
     except:
         raise HTTPException(status_code=400)
@@ -101,8 +104,8 @@ def login(
                 # generate jwt token
                 token = utils.create_jwt_token(res.id.__str__())
                 # makeup json response structure
-                response = JSONResponse({"id": res.id.__str__(), "email": user.email}, 200)
-                response.set_cookie(key="token", 
+                response = JSONResponse({"id": res.id.__str__(), "email": user.email, "tokens": res.tokens}, 200)
+                response.set_cookie(key="token",
                                     value=token, 
                                     expires=datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1),httponly=True,
                                 )
@@ -116,8 +119,8 @@ def login(
 @app.post("/logout", status_code=200)
 def logout():
     try:
-        response = JSONResponse(status_code= 200)
-        response.set_cookie(key="token", value="")
+        response = JSONResponse(content=None, status_code= 200)
+        response.set_cookie(key="token", value=None, expires=0, httponly=True)
         return response
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -1,0 +1,8 @@
+services:
+  web:
+    build: .
+    image: "ydvankit/video-summarizer:latest"
+    env_file:
+      - ./.env
+    ports:
+      - "8050:8000"

@@ -16,6 +16,7 @@ import bcrypt
 from fastapi.middleware.cors import CORSMiddleware
 from lib import utils
 import env
+import datetime
 
 user_model.Base.metadata.create_all(bind=engine)
 
@@ -101,7 +102,10 @@ def login(
                 token = utils.create_jwt_token(res.id.__str__())
                 # makeup json response structure
                 response = JSONResponse({"id": res.id.__str__(), "email": user.email}, 200)
-                response.set_cookie(key="token", value=token)
+                response.set_cookie(key="token", 
+                                    value=token, 
+                                    expires=datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1),httponly=True,
+                                )
                 return response
         else:
             # raise unauthorised error

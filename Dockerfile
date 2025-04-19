@@ -1,13 +1,17 @@
-FROM python:3.12
+FROM python:3.11-slim
 
+# Install necessary system dependencies
+RUN apt-get update && apt-get install -y ffmpeg libpq-dev gcc
+
+# Set working directory
 WORKDIR /app
 
-COPY requirements.txt requirements.txt
-
+# Copy and install Python dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy project files
 COPY . .
 
-EXPOSE 8000
-
-CMD ["fastapi", "run", "main.py", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Run the app
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

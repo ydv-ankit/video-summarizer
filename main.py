@@ -16,7 +16,6 @@ import bcrypt
 from fastapi.middleware.cors import CORSMiddleware
 from lib import utils
 import env
-import datetime
 
 user_model.Base.metadata.create_all(bind=engine)
 
@@ -32,6 +31,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 @app.get("/health")
@@ -99,39 +99,17 @@ def login(
         # check if user exists
         query = select(user_model.User).where(user_model.User.email == user.email)
         res = db.scalars(query).first()
+        print(res)
         # if exists, check password
         if res and bcrypt.checkpw(bytes(user.password, 'utf-8'), bytes(res.password, 'utf-8')):
                 # generate jwt token
                 token = utils.create_jwt_token(res.id.__str__())
                 # makeup json response structure
-                response = JSONResponse({"id": res.id.__str__(), "email": user.email, "tokens": res.tokens}, 200)
-                response.set_cookie(key="token",
-                                    value=token, 
-                                    expires=datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1), httponly=True,
-                                    samesite="none", secure=True,
-                                    path="/"
-                                )
+                response = JSONResponse({"id": res.id.__str__(), "email": user.email, "tokens": res.tokens, "auth": token}, 200)
                 return response
         else:
             # raise unauthorised error
             return JSONResponse({"msg": "invalid credentials"}, status_code = 401)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.post("/logout", status_code=200)
-def logout():
-    try:
-        response = JSONResponse(content=None, status_code= 200)
-        response.set_cookie(
-            key="token", 
-            value=None, 
-            expires=0, 
-            httponly=True, 
-            samesite="none", 
-            secure=True, 
-            path="/"
-        )
-        return response
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

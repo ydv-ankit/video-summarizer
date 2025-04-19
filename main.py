@@ -107,7 +107,8 @@ def login(
                 response = JSONResponse({"id": res.id.__str__(), "email": user.email, "tokens": res.tokens}, 200)
                 response.set_cookie(key="token",
                                     value=token, 
-                                    expires=datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1),httponly=True,
+                                    expires=datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1), httponly=True,
+                                    samesite="none", secure=True
                                 )
                 return response
         else:
@@ -120,7 +121,7 @@ def login(
 def logout():
     try:
         response = JSONResponse(content=None, status_code= 200)
-        response.set_cookie(key="token", value=None, expires=0, httponly=True)
+        response.set_cookie(key="token", value=None, expires=0, httponly=True, samesite="none", secure=True)
         return response
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

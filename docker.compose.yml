@@ -6,8 +6,6 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: summarizer
-    ports:
-      - "5432:5432"
 
   web:
     image: "ydvankit/video-summarizer"
@@ -19,6 +17,6 @@ services:
     depends_on:
       - db
     environment:
-      - POSTGRES_URL=postgresql://postgres:postgres@host.docker.internal:5432/summarizer
+      - POSTGRES_URL=postgresql://postgres:postgres@db:5432/summarizer
     env_file:
       - ./.env

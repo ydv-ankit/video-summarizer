@@ -1,6 +1,6 @@
 ## Video Summarizer
 
-- upload video in any language and get its summary in english instantly
+- upload video in any language and get its summary in english within seconds
 
 ## How it works
 
@@ -12,7 +12,27 @@
 
 ## Want to run locally?
 
-0. Make sure you have installed `python >= 3.10`
+### (With Docker)
+
+0. **_make sure you have `docker` installed and running on your machine_**
+
+1. Clone the repo
+
+   ```bash
+   git clone https://github.com/ydv-ankit/ai-video-summarizer.git
+   ```
+
+2. start docker containers using docker compose file: `docker.compose.yml`, present in the cloned directory
+
+   ```bash
+   docker compose -f ./docker.compose.yml up -d
+   ```
+
+3. your server is running on localhost: [http://localhost:8000](http://localhost:8000)
+
+### (Without Docker)
+
+0. **_Make sure you have installed `python >= 3.10`_**
 1. Clone the repo
 
    ```bash

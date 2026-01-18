@@ -3,7 +3,7 @@ ffmpeg-python==0.2.0
 python-multipart==0.0.20
 moviepy==2.1.2
 dotenv==0.9.9
-google-genai==1.10.0
+openai>=1.0.0
 SQLAlchemy==2.0.40
 psycopg2-binary==2.9.10
 bcrypt==4.3.0

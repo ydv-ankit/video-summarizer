@@ -1,11 +1,10 @@
 from moviepy import VideoFileClip
 import os 
-from google import genai
-from google.genai import types
+from openai import OpenAI
 import env
 from pydub import AudioSegment
 
-gemini = genai.Client(api_key=env.GEMINI_API_KEY)
+openai_client = OpenAI(api_key=env.OPENAI_API_KEY)
 
 def process_video(video_path):
     """
@@ -44,40 +43,41 @@ def convert_to_mono_16k(audio_file_path, output_dir="tmp"):
 
 def transcribe(audio_path):
     mono_audio = convert_to_mono_16k(audio_path)
-    audio_file = gemini.files.upload(file=mono_audio)
-    prompt = 'Generate a transcript of the speech.'
-
-    response = gemini.models.generate_content(
-        model='gemini-2.0-flash',
-        contents=[prompt, audio_file]
-    )
-    return response.text
+    
+    with open(mono_audio, "rb") as audio_file:
+        transcript = openai_client.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_file,
+            response_format="text"
+        )
+    return transcript
 
 def summarizer(text: str):
     try:
-        response = gemini.models.generate_content(
-        model="gemini-2.0-flash",
-        config=types.GenerateContentConfig(
-            system_instruction="""
-                You are given a transcription of a audio file.
-                Your task is to summarize given transcription and provide a summary containing important points.
-                Return the summary content into markdown compatible syntax that includes:
-                    - summary of the content
-                    - important points (if any)
-                    - any other relevant information (if any)
-                
-                Don't give intermediate steps or your descibing, give me only required content.
-            """),
-        contents=text
-        )
-        print(response.text)
-        # clean the response to get only the json part
-        # clean_json_str = response.text.strip('```json')
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": """You are given a transcription of an audio file.
+                    Your task is to summarize the given transcription and provide a summary containing important points.
+                    Return the summary content in markdown compatible syntax that includes:
+                        - summary of the content
+                        - important points (if any)
+                        - any other relevant information (if any)
 
-        # data = json.loads(clean_json_str)
-        # print(data)
-        # return data[0]
-        return response.text
+                    Translate the summary to english language.
+                    Don't give intermediate steps or your describing, give me only required content."""
+                },
+                {
+                    "role": "user",
+                    "content": text
+                }
+            ]
+        )
+        summary_text = response.choices[0].message.content
+        print(summary_text)
+        return summary_text
     except Exception as e:
         print(e)
         return None
